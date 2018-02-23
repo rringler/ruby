@@ -383,6 +383,23 @@ class TestHash < Test::Unit::TestCase
     assert_equal('default 99', h1.delete(99) {|i| "default #{i}" })
   end
 
+  def test_delete!
+    h1 = @cls[ 1 => 'one', 2 => 'two', true => 'true' ]
+    h2 = @cls[ 1 => 'one', 2 => 'two' ]
+    h3 = @cls[ 2 => 'two' ]
+
+    assert_equal('true', h1.delete!(true))
+    assert_equal(h2, h1)
+
+    assert_equal('one', h1.delete!(1))
+    assert_equal(h3, h1)
+
+    assert_equal('two', h1.delete!(2))
+    assert_equal(@cls[], h1)
+
+    assert_raise(KeyError) { h1.delete!(99) }
+  end
+
   def test_delete_if
     base = @cls[ 1 => 'one', 2 => false, true => 'true', 'cat' => 99 ]
     h1   = @cls[ 1 => 'one', 2 => false, true => 'true' ]

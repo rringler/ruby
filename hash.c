@@ -1185,6 +1185,41 @@ rb_hash_delete_m(VALUE hash, VALUE key)
     }
 }
 
+/*
+ *  call-seq:
+ *     hsh.delete!(key)                            -> value
+ *
+ *  Deletes the key-value pair and returns the value from <i>hsh</i> whose
+ *  key is equal to <i>key</i>. If the key is not found, it raises a
+ *  <em>KeyError</em> error.
+ *
+ *     h = { "a" => 100, "b" => 200 }
+ *     h.delete!("a")                              #=> 100
+ *     h.delete!("z")                              #=> KeyError
+ *
+ */
+
+static VALUE
+rb_hash_delete_bang_m(VALUE hash, VALUE key)
+{
+    VALUE val;
+
+    rb_hash_modify_check(hash);
+    val = rb_hash_delete_entry(hash, key);
+
+    if (val != Qundef) {
+        return val;
+    }
+    else {
+        VALUE desc = rb_protect(rb_inspect, key, 0);
+        if (NIL_P(desc)) {
+            desc = rb_any_to_s(key);
+        }
+        desc = rb_str_ellipsize(desc, 65);
+        rb_key_err_raise(rb_sprintf("key not found: %"PRIsVALUE, desc), hash, key);
+    }
+}
+
 struct shift_var {
     VALUE key;
     VALUE val;
@@ -4686,6 +4721,7 @@ Init_Hash(void)
 
     rb_define_method(rb_cHash, "shift", rb_hash_shift, 0);
     rb_define_method(rb_cHash, "delete", rb_hash_delete_m, 1);
+    rb_define_method(rb_cHash, "delete!", rb_hash_delete_bang_m, 1);
     rb_define_method(rb_cHash, "delete_if", rb_hash_delete_if, 0);
     rb_define_method(rb_cHash, "keep_if", rb_hash_keep_if, 0);
     rb_define_method(rb_cHash, "select", rb_hash_select, 0);
