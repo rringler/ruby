@@ -20,4 +20,11 @@ describe "Hash#keys" do
       h[h.keys[i]].should == h.values[i]
     end
   end
+
+  it "accepts a block" do
+    h = { 1 => "1", 2 => "2", 3 => "3", 4 => "4" }
+
+    h.keys { |key| key.odd?  }.should == [1, 3]
+    h.keys { |key| key.even? }.should == [2, 4]
+  end
 end

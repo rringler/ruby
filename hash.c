@@ -2143,15 +2143,26 @@ keys_i(VALUE key, VALUE value, VALUE ary)
     return ST_CONTINUE;
 }
 
+static int
+keys_p_i(VALUE key, VALUE value, VALUE ary)
+{
+    if (RTEST(rb_yield(key))) {
+        rb_ary_push(ary, key);
+    }
+    return ST_CONTINUE;
+}
+
 /*
  *  call-seq:
  *     hsh.keys    -> array
  *
  *  Returns a new array populated with the keys from this hash. See also
- *  <code>Hash#values</code>.
+ *  <code>Hash#values</code>.  If a block is given, it returns the keys for
+ *  which the block evaluates to +true+.
  *
  *     h = { "a" => 100, "b" => 200, "c" => 300, "d" => 400 }
- *     h.keys   #=> ["a", "b", "c", "d"]
+ *     h.keys                                 #=> ["a", "b", "c", "d"]
+ #     h.keys { |key| %w[a c].include?(key) } #=> ["a", "c"]
  *
  */
 
@@ -2162,19 +2173,27 @@ rb_hash_keys(VALUE hash)
     st_index_t size = RHASH_SIZE(hash);
 
     keys = rb_ary_new_capa(size);
+
     if (size == 0) return keys;
 
-    if (ST_DATA_COMPATIBLE_P(VALUE)) {
-	st_table *table = RHASH(hash)->ntbl;
-
-	rb_gc_writebarrier_remember(keys);
-	RARRAY_PTR_USE(keys, ptr, {
-	    size = st_keys(table, ptr, size);
-	});
-	rb_ary_set_len(keys, size);
+    if (rb_block_given_p()) {
+        rb_hash_foreach(hash, keys_p_i, keys);
     }
     else {
-	rb_hash_foreach(hash, keys_i, keys);
+        if (ST_DATA_COMPATIBLE_P(VALUE)) {
+            st_table *table = RHASH(hash)->ntbl;
+
+            rb_gc_writebarrier_remember(keys);
+
+            RARRAY_PTR_USE(keys, ptr, {
+                size = st_keys(table, ptr, size);
+            });
+
+            rb_ary_set_len(keys, size);
+        }
+        else {
+            rb_hash_foreach(hash, keys_i, keys);
+        }
     }
 
     return keys;
